@@ -7,10 +7,13 @@ verify_ssl = true
 pytest = "*"
 pyhamcrest = "*"
 mbtest = "*"
+bpython = "*"
 
 [packages]
 jira = "*"
 python-dotenv = "*"
+click = "*"
+requests = "*"
 
 [requires]
 python_version = "3.7"
