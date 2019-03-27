@@ -8,6 +8,7 @@ pytest = "*"
 pyhamcrest = "*"
 mbtest = "*"
 bpython = "*"
+pytest-datadir = "*"
 
 [packages]
 jira = "*"
