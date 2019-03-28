@@ -34,10 +34,9 @@ def columns(url, query):
     statuses = dict()
     issues = _jira_search(j, query, expand='changelog')
     for issue in issues:
-        statuses[issue.fields.status.name] = statuses.get(issue.fields.status.name, 0)
-
+        statuses[issue.fields.status.name] = statuses.get(issue.fields.status.name, 0) + 1
     header = ",".join(sorted(statuses.keys()))
-    results = ",".join([statuses.get(i, 0) for i in sorted(statuses.keys())])
+    results = ",".join([str(statuses.get(i, 0)) for i in sorted(statuses.keys())])
     print(header)
     print(results)
     exit(0)
