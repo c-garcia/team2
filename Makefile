@@ -1,4 +1,4 @@
-.PHONY: test/acceptance
+.PHONY: test/acceptance lint/pycodestyle
 
 
 lint/pycodestyle:
@@ -7,4 +7,4 @@ lint/pycodestyle:
 		.
 
 test/acceptance:
-	@pipenv run pytest acceptance
+	@pipenv run python -m pytest acceptance

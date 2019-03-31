@@ -1,12 +1,11 @@
 #!/usr/bin/env python
+import json
 import os
 
-import json
 import click
 import requests
 from dotenv import load_dotenv
 from jira import JIRA, Issue
-from mbtest.imposters import Imposter, Proxy
 from mbtest.server import MountebankServer
 
 
@@ -14,7 +13,7 @@ def connect_proxy(proxy_url: str) -> JIRA:
     return JIRA(proxy_url, basic_auth=(os.getenv('JIRA_USER'), os.getenv('JIRA_PASSWORD')))
 
 
-def create_imposter(mb_url: str, port: int, to: str) -> None:
+def create_imposter(mb_url: str, port: int, to: str, user: str) -> None:
     config = dict(
         protocol="http",
         port=port,
@@ -24,7 +23,34 @@ def create_imposter(mb_url: str, port: int, to: str) -> None:
                     to=to,
                     predicateGenerators=[dict(matches=dict(path=True, query=True))],
                     injectHeaders={"Accept-Encoding": "identity"}
+                ),
+                _behaviors=dict(
+                    decorate="""
+(config) => {{
+    const randomString = () => Math.trunc(Math.random() * 1000000).toString();
+    const escapeRegExp = (text) => text.replace(new RegExp('[-[\\]{{}}()*+?.,\\\\^$|#\\s]','g'), '\\\\$&');
+    
+    if (config.response.headers['X-AACCOUNTID']){{
+      config.response.headers['X-AACCOUNTID'] = 'fabadafabadafabadafabada';
+    }}
+    if (config.response.headers['X-AREQUESTID']){{
+      config.response.headers['X-AREQUESTID'] = randomString();
+    }}
+    if (config.response.headers['ATL-TraceId']){{
+      config.response.headers['ATL-TraceId'] = randomString();
+    }}
+    if (config.response.headers['Set-Cookie']){{
+      config.response.headers['Set-Cookie'] = "atlassian.xsrf.token=a-random-token_lin; Path=/; Secure";
+    }}
+    const usr_re=new RegExp('{1}', 'g');
+    //const usr_re=new RegExp(escapeRegExp('{1}'), 'g');
+    config.response.body = config.response.body.replace(usr_re, 'some_user@no-domain.example.com')
+    const url_re=new RegExp('{0}', 'g');
+    config.response.body = config.response.body.replace(url_re, 'https://non-existing-server.example.com')
+}}
+""".format(to, user)
                 )
+
             )]
         )]
     )
@@ -63,7 +89,7 @@ def setup(port, query, out):
     server = None
     try:
         server = MountebankServer()
-        create_imposter(str(server.server_url), int(port), os.getenv('JIRA_URL'))
+        create_imposter(str(server.server_url), int(port), os.getenv('JIRA_URL'), os.getenv('JIRA_USER'))
         j = connect_proxy(f'http://localhost:{port}/')
         _jira_search_with_changes(j, query)
         proxy_config = get_proxy_config(str(server.server_url), int(port))
