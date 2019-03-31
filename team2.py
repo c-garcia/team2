@@ -27,8 +27,10 @@ def cli():
 
 @cli.command()
 @click.option('--url', help='url of the JIRA server')
-@click.option('--col-names', '-c', 'col_names', help='name and order of the columns. Separated by :', type=str, required=False)
-@click.option('--map', '-m', 'map_status', help='map the status to a new one for every issue', type=str, multiple=True, required=False)
+@click.option('--col-names', '-c', 'col_names', help='name and order of the columns. Separated by :', type=str,
+              required=False)
+@click.option('--map', '-m', 'map_status', help='map the status to a new one for every issue', type=str, multiple=True,
+              required=False)
 @click.argument('query')
 def columns(url, col_names, map_status, query):
     load_dotenv()
@@ -51,7 +53,6 @@ def columns(url, col_names, map_status, query):
         col_names = sorted(statuses.keys())
     else:
         col_names = col_names.split(":")
-
 
     header = ",".join(col_names)
     results = ",".join([str(statuses.get(i, 0)) for i in col_names])

@@ -9,6 +9,7 @@ pyhamcrest = "*"
 mbtest = "*"
 bpython = "*"
 pytest-datadir = "*"
+pycodestyle = "*"
 
 [packages]
 jira = "*"
