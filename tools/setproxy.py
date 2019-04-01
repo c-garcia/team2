@@ -24,14 +24,18 @@ def create_imposter(mb_url: str, port: int, to: str, user: str) -> None:
                     predicateGenerators=[dict(matches=dict(path=True, query=True))],
                     injectHeaders={"Accept-Encoding": "identity"}
                 ),
+                #function escapeRegExp(text) { return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'); }
                 _behaviors=dict(
                     decorate="""
 (config) => {{
     const randomString = () => Math.trunc(Math.random() * 1000000).toString();
-    const escapeRegExp = (text) => text.replace(new RegExp('[-[\\]{{}}()*+?.,\\\\^$|#\\s]','g'), '\\\\$&');
+    const escapeRegExp = (text) => text.replace(/[-[\\]{{}}()*+?.,\\\\^$|#\\s]/g, '\\\\$&');
+    const accountId = 'fabadafabadafabadafabada';
+    const origAccountId = config.response.headers['X-AACCOUNTID'];
     
-    if (config.response.headers['X-AACCOUNTID']){{
-      config.response.headers['X-AACCOUNTID'] = 'fabadafabadafabadafabada';
+    if (origAccountId){{
+      config.response.headers['X-AACCOUNTID'] = accountId;
+      config.response.body = config.response.body.replace(new RegExp(origAccountId, 'g'), accountId);
     }}
     if (config.response.headers['X-AREQUESTID']){{
       config.response.headers['X-AREQUESTID'] = randomString();
@@ -42,11 +46,15 @@ def create_imposter(mb_url: str, port: int, to: str, user: str) -> None:
     if (config.response.headers['Set-Cookie']){{
       config.response.headers['Set-Cookie'] = "atlassian.xsrf.token=a-random-token_lin; Path=/; Secure";
     }}
-    const usr_re=new RegExp('{1}', 'g');
-    //const usr_re=new RegExp(escapeRegExp('{1}'), 'g');
+    const usr_re=new RegExp(escapeRegExp('{1}'), 'g');
     config.response.body = config.response.body.replace(usr_re, 'some_user@no-domain.example.com')
     const url_re=new RegExp('{0}', 'g');
     config.response.body = config.response.body.replace(url_re, 'https://non-existing-server.example.com')
+    const avatar_re = /avatar-cdn.atlassian.com\\/([a-z0-9]+)/;
+    const avatar_matches = avatar_re.exec(config.response.body)
+    if (avatar_matches){{
+        config.response.body = config.response.body.replace(new RegExp(avatar_matches[1], 'g'), '00');
+    }}
 }}
 """.format(to, user)
                 )
