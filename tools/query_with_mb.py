@@ -55,6 +55,9 @@ def create_imposter(mb_url: str, port: int, to: str, user: str) -> None:
     if (avatar_matches){{
         config.response.body = config.response.body.replace(new RegExp(avatar_matches[1], 'g'), '00');
     }}
+    const displayname_re = /("displayName"):"([^"]*)"/g;
+    config.response.body = config.response.body.replace(displayname_re, '$1:"No Name"')
+    config.response.body = config.response.body.replace(/"(\\d\\dx\\d\\d)":"[^"]*"/g, '"$1":"https//avatar.example.com/1.jpg"'); 
 }}
 """.format(to, user)
                 )
