@@ -61,5 +61,25 @@ def columns(url, col_names, map_status, query):
     exit(0)
 
 
+@cli.command()
+@click.option('--url', help='url of the JIRA server')
+@click.option('--type-names', '-t', 'type_names', help='name and order of the issue_types. Separated by :', type=str,
+              required=False)
+@click.argument('query')
+def types(url, type_names, query):
+    load_dotenv()
+    j = JIRA(url, basic_auth=(os.getenv('JIRA_USER'), os.getenv('JIRA_PASSWORD')))
+    types = dict()
+    issues = _jira_search(j, query, expand='changelog')
+    for issue in issues:
+        types[issue.fields.issuetype.name] = types.get(issue.fields.issuetype.name, 0) + 1
+    col_names = sorted(types.keys())
+    header = ",".join(col_names)
+    results = ",".join([str(types.get(i, 0)) for i in col_names])
+    print(header)
+    print(results)
+    exit(0)
+
+
 if __name__ == '__main__':
     cli()

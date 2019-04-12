@@ -66,7 +66,6 @@ def create_imposter(mb_url: str, port: int, to: str, user: str) -> None:
         )]
     )
 
-    print(json.dumps(config))
     resp = requests.post(f'{mb_url}', json=config)
     if resp.status_code // 100 != 2:
         raise RuntimeError(f'Problem creating imposter: {resp.content}')
