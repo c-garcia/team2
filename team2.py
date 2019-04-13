@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
-import os
-
 import click
-from dotenv import load_dotenv
 from jira import JIRA, Issue
 
 
@@ -21,20 +18,27 @@ def _jira_search(j: JIRA, q: str, **kwargs) -> [Issue]:
 
 
 @click.group()
-def cli():
+@click.option('--url', help='url of the JIRA server', required=True)
+@click.option('--user', help='user in the JIRA server', required=True)
+@click.option('--password', help='password in the JIRA server', required=True)
+@click.pass_context
+def cli(ctx: click.Context, url: str, user: str, password: str):
+    ctx.ensure_object(dict)
+    ctx.obj['URL'] = url
+    ctx.obj['USER'] = user
+    ctx.obj['PASSWORD'] = password
     pass
 
 
 @cli.command()
-@click.option('--url', help='url of the JIRA server')
 @click.option('--col-names', '-c', 'col_names', help='name and order of the columns. Separated by :', type=str,
               required=False)
 @click.option('--map', '-m', 'map_status', help='map the status to a new one for every issue', type=str, multiple=True,
               required=False)
 @click.argument('query')
-def columns(url, col_names, map_status, query):
-    load_dotenv()
-    j = JIRA(url, basic_auth=(os.getenv('JIRA_USER'), os.getenv('JIRA_PASSWORD')))
+@click.pass_context
+def columns(ctx: click.Context, col_names, map_status, query):
+    j = JIRA(ctx.obj['URL'], basic_auth=(ctx.obj['USER'], ctx.obj['PASSWORD']))
     statuses = dict()
 
     issues = _jira_search(j, query, expand='changelog')
@@ -62,13 +66,12 @@ def columns(url, col_names, map_status, query):
 
 
 @cli.command()
-@click.option('--url', help='url of the JIRA server')
 @click.option('--type-names', '-t', 'type_names', help='name and order of the issue_types. Separated by :', type=str,
               required=False)
 @click.argument('query')
-def types(url, type_names, query):
-    load_dotenv()
-    j = JIRA(url, basic_auth=(os.getenv('JIRA_USER'), os.getenv('JIRA_PASSWORD')))
+@click.pass_context
+def types(ctx: click.Context, type_names: str, query: str):
+    j = JIRA(ctx.obj['URL'], basic_auth=(ctx.obj['USER'], ctx.obj['PASSWORD']))
     types = dict()
     issues = _jira_search(j, query, expand='changelog')
     for issue in issues:
@@ -82,4 +85,4 @@ def types(url, type_names, query):
 
 
 if __name__ == '__main__':
-    cli()
+    cli(obj={}, auto_envvar_prefix='PATRONIO')
