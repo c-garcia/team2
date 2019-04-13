@@ -1,16 +1,13 @@
 #!/usr/bin/env python
-import json
-import os
 
 import click
 import requests
-from dotenv import load_dotenv
 from jira import JIRA, Issue
 from mbtest.server import MountebankServer
 
 
-def connect_proxy(proxy_url: str) -> JIRA:
-    return JIRA(proxy_url, basic_auth=(os.getenv('JIRA_USER'), os.getenv('JIRA_PASSWORD')))
+def connect_proxy(proxy_url: str, user: str, password: str) -> JIRA:
+    return JIRA(proxy_url, basic_auth=(user, password))
 
 
 def create_imposter(mb_url: str, port: int, to: str, user: str) -> None:
@@ -24,7 +21,6 @@ def create_imposter(mb_url: str, port: int, to: str, user: str) -> None:
                     predicateGenerators=[dict(matches=dict(path=True, query=True))],
                     injectHeaders={"Accept-Encoding": "identity"}
                 ),
-                #function escapeRegExp(text) { return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'); }
                 _behaviors=dict(
                     decorate="""
 (config) => {{
@@ -32,7 +28,7 @@ def create_imposter(mb_url: str, port: int, to: str, user: str) -> None:
     const escapeRegExp = (text) => text.replace(/[-[\\]{{}}()*+?.,\\\\^$|#\\s]/g, '\\\\$&');
     const accountId = 'fabadafabadafabadafabada';
     const origAccountId = config.response.headers['X-AACCOUNTID'];
-    
+
     if (origAccountId){{
       config.response.headers['X-AACCOUNTID'] = accountId;
       config.response.body = config.response.body.replace(new RegExp(origAccountId, 'g'), accountId);
@@ -57,7 +53,10 @@ def create_imposter(mb_url: str, port: int, to: str, user: str) -> None:
     }}
     const displayname_re = /("displayName"):"([^"]*)"/g;
     config.response.body = config.response.body.replace(displayname_re, '$1:"No Name"')
-    config.response.body = config.response.body.replace(/"(\\d\\dx\\d\\d)":"[^"]*"/g, '"$1":"https//avatar.example.com/1.jpg"'); 
+    config.response.body = config.response.body.replace(
+      /"(\\d\\dx\\d\\d)":"[^"]*"/g,
+      '"$1":"https//avatar.example.com/1.jpg"'
+    );
 }}
 """.format(to, user)
                 )
@@ -91,16 +90,18 @@ def _jira_search_with_changes(j: JIRA, q: str) -> [Issue]:
 
 
 @click.command()
+@click.option('--url', required=True)
+@click.option('--user', required=True)
+@click.option('--password', required=True)
 @click.option('--port', default=3000, help='port to listen on')
 @click.option('--out', default='jiraResults.json', help='file to save')
 @click.argument('query')
-def setup(port, query, out):
-    load_dotenv()
+def setup(url, user, password, port, query, out):
     server = None
     try:
         server = MountebankServer()
-        create_imposter(str(server.server_url), int(port), os.getenv('JIRA_URL'), os.getenv('JIRA_USER'))
-        j = connect_proxy(f'http://localhost:{port}/')
+        create_imposter(str(server.server_url), int(port), url, user)
+        j = connect_proxy(f'http://localhost:{port}/', user, password)
         _jira_search_with_changes(j, query)
         proxy_config = get_proxy_config(str(server.server_url), int(port))
         with open(out, 'w') as f:
@@ -111,4 +112,4 @@ def setup(port, query, out):
 
 
 if __name__ == '__main__':
-    setup()
+    setup(auto_envvar_prefix='PATRONIO')

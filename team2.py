@@ -66,17 +66,22 @@ def columns(ctx: click.Context, col_names, map_status, query):
 
 
 @cli.command()
-@click.option('--type-names', '-t', 'type_names', help='name and order of the issue_types. Separated by :', type=str,
+@click.option('--col-names', '-c', 'col_names', help='name and order of the issue_types. Separated by :', type=str,
               required=False)
 @click.argument('query')
 @click.pass_context
-def types(ctx: click.Context, type_names: str, query: str):
+def types(ctx: click.Context, col_names: str, query: str):
     j = JIRA(ctx.obj['URL'], basic_auth=(ctx.obj['USER'], ctx.obj['PASSWORD']))
     types = dict()
     issues = _jira_search(j, query, expand='changelog')
     for issue in issues:
         types[issue.fields.issuetype.name] = types.get(issue.fields.issuetype.name, 0) + 1
-    col_names = sorted(types.keys())
+
+    if col_names == '' or col_names is None:
+        col_names = sorted(types.keys())
+    else:
+        col_names = col_names.split(":")
+
     header = ",".join(col_names)
     results = ",".join([str(types.get(i, 0)) for i in col_names])
     print(header)
