@@ -1,4 +1,13 @@
-.PHONY: test/acceptance lint/pycodestyle
+.PHONY: mb/install test/acceptance lint/pycodestyle
+
+OUT ?= "config.json"
+
+mb/install:
+	@npm install
+
+
+mb/query:
+	@pipenv run python tools/query_with_mb.py --out $(OUT) '$(QUERY)'
 
 
 lint/pycodestyle:

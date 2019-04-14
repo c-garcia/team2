@@ -95,14 +95,15 @@ def _jira_search_with_changes(j: JIRA, q: str) -> [Issue]:
 @click.option('--password', required=True)
 @click.option('--port', default=3000, help='port to listen on')
 @click.option('--out', default='jiraResults.json', help='file to save')
-@click.argument('query')
-def setup(url, user, password, port, query, out):
+@click.argument('queries', nargs=-1)
+def setup(url, user, password, port, queries, out):
     server = None
     try:
         server = MountebankServer()
         create_imposter(str(server.server_url), int(port), url, user)
         j = connect_proxy(f'http://localhost:{port}/', user, password)
-        _jira_search_with_changes(j, query)
+        for query in queries:
+            _jira_search_with_changes(j, query)
         proxy_config = get_proxy_config(str(server.server_url), int(port))
         with open(out, 'w') as f:
             f.write(str(proxy_config))
