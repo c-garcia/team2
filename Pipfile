@@ -10,12 +10,14 @@ mbtest = "*"
 bpython = "*"
 pytest-datadir = "*"
 pycodestyle = "*"
+pylint = "*"
 
 [packages]
 jira = "*"
 python-dotenv = "*"
 click = "*"
 requests = "*"
+arrow = "*"
 
 [requires]
 python_version = "3.7"
