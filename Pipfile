@@ -11,6 +11,7 @@ bpython = "*"
 pytest-datadir = "*"
 pycodestyle = "*"
 pylint = "*"
+pytest-mock = "*"
 
 [packages]
 jira = "*"
