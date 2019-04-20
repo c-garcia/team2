@@ -1,4 +1,4 @@
-.PHONY: mb/install test/acceptance lint/pycodestyle
+.PHONY: mb/install test/acceptance lint/pycodestyle test/test
 
 OUT ?= "config.json"
 
