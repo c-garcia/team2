@@ -18,6 +18,9 @@ lint/pycodestyle:
 test/acceptance:
 	@pipenv run python -m pytest acceptance
 
+test/test:
+	@pipenv run python -m pytest tests
+
 
 acceptance/test_flow_time/20190109-20190122-0-issues.json:
 	@pipenv run python tools/query_with_mb.py \
