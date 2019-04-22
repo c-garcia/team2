@@ -7,6 +7,7 @@ import sys
 
 import daos
 import dates
+import model
 import writers
 
 
@@ -44,25 +45,29 @@ def cli(ctx: click.Context, url: str, user: str, password: str):
 @click.argument('query')
 @click.pass_context
 def columns(ctx: click.Context, col_names, map_status, query):
-    issues = ctx.obj['JIRA'].query(query)
-    statuses = dict()
-    for issue in issues:
-        # noinspection PyUnresolvedReferences
-        statuses[issue.status] = statuses.get(issue.status, 0) + 1
+    try:
+        issues = ctx.obj['JIRA'].query(query)
+        statuses = dict()
+        for issue in issues:
+            # noinspection PyUnresolvedReferences
+            statuses[issue.status] = statuses.get(issue.status, 0) + 1
 
-    if map_status is None:
-        map_status = ()
+        if map_status is None:
+            map_status = ()
 
-    for (old_column, new_column) in map_status:
-        if old_column in statuses:
-            statuses[new_column] = statuses.get(new_column, 0) + statuses[old_column]
-            del statuses[old_column]
+        for (old_column, new_column) in map_status:
+            if old_column in statuses:
+                statuses[new_column] = statuses.get(new_column, 0) + statuses[old_column]
+                del statuses[old_column]
 
-    if col_names == () or col_names is None:
-        col_names = sorted(statuses.keys())
+        if col_names == () or col_names is None:
+            col_names = sorted(statuses.keys())
 
-    writers.CSV.write_map(sys.stdout, statuses, keys=col_names, default='0')
-    sys.exit(0)
+        writers.CSV.write_map(sys.stdout, statuses, keys=col_names, default='0')
+        sys.exit(0)
+    except model.DAOException as e:
+        click.echo(f'Error retrieving backlog items: {e.message}', err=True, nl=True)
+        sys.exit(1)
 
 
 @cli.command()
@@ -75,6 +80,7 @@ def types(ctx: click.Context, col_names: str, query: str):
     issue_types = dict()
     issues = _jira_search(j, query, expand='changelog')
     for issue in issues:
+        # noinspection PyUnresolvedReferences
         issue_types[issue.fields.issuetype.name] = issue_types.get(issue.fields.issuetype.name, 0) + 1
 
     if col_names == '' or col_names is None:

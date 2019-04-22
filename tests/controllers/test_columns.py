@@ -5,6 +5,7 @@ from click.testing import CliRunner
 from hamcrest import assert_that, is_, instance_of, contains, has_key, equal_to
 
 import daos
+import model
 import team2
 import writers
 from model import JIRAIssue
@@ -31,6 +32,7 @@ def test_calls_dao_and_outputs_results(mocker):
         [*VALID_CREDENTIALS, 'columns', '-c', 'To Do', '-c', 'In Progress', '-c', 'Done', QUERY]
     )
     mock_jira.query.assert_called_once_with(QUERY)
+    mock_writer.write_map.assert_called_once()
     args, kwargs = mock_writer.write_map.call_args
     assert_that(args[0], instance_of(io.IOBase))
     assert_that(args[1], contains('To Do', 'In Progress', 'Done'))
@@ -39,6 +41,22 @@ def test_calls_dao_and_outputs_results(mocker):
     assert_that(kwargs, has_key('default'))
     assert_that(kwargs['default'], equal_to('0'))
     assert_that(output.exit_code, is_(0))
+
+
+def test_error_in_dao_is_shown_in_stderr(mocker):
+    mock_jira = mocker.Mock(spec=daos.JIRA)
+    mock_jira.query = mocker.Mock(side_effect=model.DAOException('Some JIRA error'))
+    mocker.patch('daos.JIRA', return_value=mock_jira)
+    mock_writer = mocker.patch('writers.CSV', spec=writers.CSV)
+    mock_echo = mocker.patch('click.echo')
+    output = CliRunner().invoke(
+        team2.cli,
+        [*VALID_CREDENTIALS, 'columns', '-c', 'To Do', '-c', 'In Progress', '-c', 'Done', QUERY],
+        mix_stderr=True
+    )
+    assert_that(output.exit_code, is_(1))
+    mock_echo.assert_called_with('Error retrieving backlog items: Some JIRA error', nl=True, err=True)
+    mock_writer.write_map.assert_not_called()
 
 
 if __name__ == '__main__':

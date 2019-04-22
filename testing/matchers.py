@@ -15,8 +15,17 @@ class CompletedProcessMatcher(BaseMatcher, ABC):
         return cmd_result.stdout.decode(sys.stdout.encoding) if cmd_result.stdout is not None else None
 
     @staticmethod
+    def _error_str(cmd_result: CompletedProcess) -> Optional[str]:
+        return cmd_result.stderr.decode(sys.stderr.encoding) if cmd_result.stderr is not None else None
+
+    @staticmethod
     def _output_lines(cmd_result: CompletedProcess) -> Optional[List[str]]:
         res = CompletedProcessMatcher._output_str(cmd_result)
+        return res.splitlines() if res is not None else None
+
+    @staticmethod
+    def _error_lines(cmd_result: CompletedProcess) -> Optional[List[str]]:
+        res = CompletedProcessMatcher._error_str(cmd_result)
         return res.splitlines() if res is not None else None
 
     @staticmethod
@@ -27,15 +36,6 @@ class CompletedProcessMatcher(BaseMatcher, ABC):
             return vals[col]
         except (IndexError, AttributeError, KeyError, TypeError):
             return None
-
-    @staticmethod
-    def _error_str(cmd_result: CompletedProcess) -> str:
-        return cmd_result.stderr.decode(sys.stderr.encoding) if cmd_result.stderr is not None else None
-
-    @staticmethod
-    def _error_lines(cmd_result: CompletedProcess) -> List[str]:
-        res = CompletedProcessMatcher._error_str(cmd_result)
-        return res.split("\n") if res is not None else None
 
 
 class HeaderHasColumnsMatcher(CompletedProcessMatcher):
@@ -137,3 +137,19 @@ class CellHasValueMatcher(CompletedProcessMatcher):
 
 def output_cell_has_value(row: int, col: str, expected: Any):
     return CellHasValueMatcher(row, col, str(expected))
+
+
+class HasErrorMessageMatcher(CompletedProcessMatcher):
+    def __init__(self, msg: str):
+        super().__init__()
+        self.msg = msg
+
+    def _matches(self, cmd_result: CompletedProcess) -> bool:
+        return CompletedProcessMatcher._error_lines(cmd_result)[0].rstrip() == self.msg
+
+    def describe_to(self, description):
+        description.append_text(f'Expected command to have "{self.msg}" as the beginning of stderr')
+
+
+def has_error_message(msg: str) -> HasErrorMessageMatcher:
+    return HasErrorMessageMatcher(msg)
