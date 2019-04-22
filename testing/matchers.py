@@ -17,7 +17,7 @@ class CompletedProcessMatcher(BaseMatcher, ABC):
     @staticmethod
     def _output_lines(cmd_result: CompletedProcess) -> Optional[List[str]]:
         res = CompletedProcessMatcher._output_str(cmd_result)
-        return res.split('\n') if res is not None else None
+        return res.splitlines() if res is not None else None
 
     @staticmethod
     def _output_cell(cmd_result: CompletedProcess, row: int, col: str) -> Optional[str]:
@@ -93,7 +93,7 @@ class HeaderHasColumnsInLexicographicalOrderMatcher(CompletedProcessMatcher):
         if lines is None:
             return False
         try:
-            return sorted(self.columns) == lines[0].split(',')
+            return list(sorted(self.columns)) == list(lines[0].split(','))
         except (IndexError, AttributeError):
             return False
 

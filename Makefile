@@ -46,3 +46,8 @@ acceptance/test_flow_time/20190109-20190122-0-issues.json:
 		'project=SCRUM3 and status changed to ("Done") on "2019/01/20"'\
 		'project=SCRUM3 and status changed to ("Done") on "2019/01/21"'
 
+
+tests/daos/test_jira_dao/all-issues-in-scrum1.json:
+	@pipenv run python tools/query_with_mb.py \
+		--out $@ \
+		'project=SCRUM1'

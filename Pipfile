@@ -19,6 +19,7 @@ python-dotenv = "*"
 click = "*"
 requests = "*"
 arrow = "*"
+furl = "*"
 
 [requires]
 python_version = "3.7"

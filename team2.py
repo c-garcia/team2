@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 
 import click
+from furl import furl
 from jira import JIRA, Issue
+import sys
 
+import daos
 import dates
+import writers
 
 
 def _jira_search(j: JIRA, q: str, **kwargs) -> [Issue]:
@@ -29,42 +33,36 @@ def cli(ctx: click.Context, url: str, user: str, password: str):
     ctx.obj['URL'] = url
     ctx.obj['USER'] = user
     ctx.obj['PASSWORD'] = password
-    pass
+    ctx.obj['JIRA'] = daos.JIRA(furl(url), api_key=(user, password))
 
 
 @cli.command()
-@click.option('--col-names', '-c', 'col_names', help='name and order of the columns. Separated by :', type=str,
-              required=False)
-@click.option('--map', '-m', 'map_status', help='map the status to a new one for every issue', type=str, multiple=True,
-              required=False)
+@click.option('--col-name', '-c', 'col_names', help='name and order of the columns. Separated by :', type=str,
+              required=False, multiple=True)
+@click.option('--map', '-m', 'map_status', help='map the status to a new one for every issue',
+              type=click.Tuple([str, str]), nargs=2, required=False, multiple=True, )
 @click.argument('query')
 @click.pass_context
 def columns(ctx: click.Context, col_names, map_status, query):
-    j = JIRA(ctx.obj['URL'], basic_auth=(ctx.obj['USER'], ctx.obj['PASSWORD']))
+    issues = ctx.obj['JIRA'].query(query)
     statuses = dict()
-
-    issues = _jira_search(j, query, expand='changelog')
     for issue in issues:
-        statuses[issue.fields.status.name] = statuses.get(issue.fields.status.name, 0) + 1
+        # noinspection PyUnresolvedReferences
+        statuses[issue.status] = statuses.get(issue.status, 0) + 1
 
     if map_status is None:
-        map_status = []
+        map_status = ()
 
-    for (old_column, new_column) in [item.split(':') for item in map_status]:
+    for (old_column, new_column) in map_status:
         if old_column in statuses:
-            statuses[new_column] = statuses[old_column]
+            statuses[new_column] = statuses.get(new_column, 0) + statuses[old_column]
             del statuses[old_column]
 
-    if col_names == '' or col_names is None:
+    if col_names == () or col_names is None:
         col_names = sorted(statuses.keys())
-    else:
-        col_names = col_names.split(":")
 
-    header = ",".join(col_names)
-    results = ",".join([str(statuses.get(i, 0)) for i in col_names])
-    print(header)
-    print(results)
-    exit(0)
+    writers.CSV.write_map(sys.stdout, statuses, keys=col_names, default='0')
+    sys.exit(0)
 
 
 @cli.command()

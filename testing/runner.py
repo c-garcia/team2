@@ -11,10 +11,9 @@ class CommandRunner:
         self._global_options = []
         self._subcommand = None
 
-    def with_option(self, name, value=None) -> 'CommandRunner':
+    def with_option(self, name, *vals) -> 'CommandRunner':
         self._options.append(name)
-        if value is not None:
-            self._options.append(value)
+        self._options.extend(vals)
         return self
 
     def with_subcommand(self, subcommand: str) -> 'CommandRunner':
