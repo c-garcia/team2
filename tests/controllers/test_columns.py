@@ -30,7 +30,6 @@ def test_calls_dao_and_outputs_results(mocker):
         team2.cli,
         [*VALID_CREDENTIALS, 'columns', '-c', 'To Do', '-c', 'In Progress', '-c', 'Done', QUERY]
     )
-    print(output.stdout)
     mock_jira.query.assert_called_once_with(QUERY)
     args, kwargs = mock_writer.write_map.call_args
     assert_that(args[0], instance_of(io.IOBase))
