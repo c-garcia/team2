@@ -5,10 +5,19 @@ from furl import furl
 from jira import JIRA, Issue
 import sys
 
+from typing import Mapping
+from dataclasses import replace
+
 import daos
 import dates
 import model
 import writers
+
+
+def _map_status(i: model.JIRAIssue, m: Mapping[str, str]) -> model.JIRAIssue:
+    if i.status in m:
+        return replace(i, status=m[i.status])
+    return i
 
 
 def _jira_search(j: JIRA, q: str, **kwargs) -> [Issue]:
@@ -47,18 +56,12 @@ def cli(ctx: click.Context, url: str, user: str, password: str):
 def columns(ctx: click.Context, col_names, map_status, query):
     try:
         issues = ctx.obj['JIRA'].query(query)
+        map_status_mapping = {x: y for (x, y) in map_status}
+        new_issues = [_map_status(i, map_status_mapping) for i in issues]
         statuses = dict()
-        for issue in issues:
+        for issue in new_issues:
             # noinspection PyUnresolvedReferences
             statuses[issue.status] = statuses.get(issue.status, 0) + 1
-
-        if map_status is None:
-            map_status = ()
-
-        for (old_column, new_column) in map_status:
-            if old_column in statuses:
-                statuses[new_column] = statuses.get(new_column, 0) + statuses[old_column]
-                del statuses[old_column]
 
         if col_names == () or col_names is None:
             col_names = sorted(statuses.keys())
